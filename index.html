@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Executive Facility & Property Management System (Bahrain)</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- React, ReactDOM, and Babel CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased selection:bg-amber-500 selection:text-slate-950">
+  <div id="root"></div>
+
+  <!-- React Application Logic -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    // --- HELPER ICON COMPONENT (Lucide Dynamic Mapper) ---
+    const Icon = ({ name, className = "w-4 h-4", ...props }) => {
+      const iconRef = useRef(null);
+
+      useEffect(() => {
+        if (iconRef.current && window.lucide) {
+          iconRef.current.innerHTML = '';
+          const kebabName = name
+            .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+            .toLowerCase();
+
+          const iconNode = window.lucide.createIcons({
+            icons: { [kebabName]: window.lucide.icons[name] },
+            nameAttr: 'data-lucide'
+          });
+        }
+      }, [name]);
+
+      return <i ref={iconRef} data-lucide={name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()} className={className} {...props}></i>;
+    };
+
+    // --- INITIAL MOCK DATA (BAHRAIN CONTEXT) ---
+    const INITIAL_PROPERTIES = [
+      {
+        id: 'prop-1',
+        name: 'Seef Heights Tower',
+        type: 'Commercial & Residential Tower',
+        location: 'Seef District, Manama',
+        municipalityNo: 'MUN-2023-8841',
+        ownerId: 'own-1',
+        ownerName: 'Al-Mansoor Real Estate W.L.L.',
+        totalUnits: 24,
+        image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=600&q=80'
+      },
+      {
+        id: 'prop-2',
+        name: 'Amwaj Waterside Villas',
+        type: 'Luxury Residential Complex',
+        location: 'Amwaj Islands, Muharraq',
+        municipalityNo: 'MUN-2022-3109',
+        ownerId: 'own-2',
+        ownerName: 'Sheikh Ebrahim Al-Khalifa',
+        totalUnits: 8,
+        image: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=600&q=80'
+      },
+      {
+        id: 'prop-3',
+        name: 'Juffair Pearl Residence',
+        type: 'Residential Apartments',
+        location: 'Juffair, Manama',
+        municipalityNo: 'MUN-2024-0012',
+        ownerId: 'own-1',
+        ownerName: 'Al-Mansoor Real Estate W.L.L.',
+        totalUnits: 16,
+        image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80'
+      }
+    ];
+
+    const INITIAL_UNITS = [
+      {
+        id: 'unit-101',
+        propertyId: 'prop-1',
+        propertyName: 'Seef Heights Tower',
+        unitNumber: '101',
+        type: 'Commercial Office',
+        floor: '1st Floor',
+        rentAmount: 1200,
+        bedrooms: 0,
+        bathrooms: 2,
+        status: 'Occupied',
+        ewaAccountNo: 'EWA-8839201-1',
+        ewaCap: 150,
+        ewaResponsibility: 'Included with Cap',
+        tenantId: 'ten-1',
+        tenantName: 'Gulf FinTech Solutions W.L.L.'
+      },
+      {
+        id: 'unit-102',
+        propertyId: 'prop-1',
+        propertyName: 'Seef Heights Tower',
+        unitNumber: '102',
+        type: 'Commercial Office',
+        floor: '1st Floor',
+        rentAmount: 1100,
+        bedrooms: 0,
+        bathrooms: 2,
+        status: 'Vacant',
+        ewaAccountNo: 'EWA-8839201-2',
+        ewaCap: 100,
+        ewaResponsibility: 'Tenant Direct',
+        tenantId: null,
+        tenantName: null
+      },
+      {
+        id: 'unit-201',
+        propertyId: 'prop-2',
+        propertyName: 'Amwaj Waterside Villas',
+        unitNumber: 'Villa 04',
+        type: 'Luxury Villa',
+        floor: '2 Floors + Rooftop',
+        rentAmount: 1850,
+        bedrooms: 4,
+        bathrooms: 5,
+        status: 'Occupied',
+        ewaAccountNo: 'EWA-1029384-4',
+        ewaCap: 250,
+        ewaResponsibility: 'Included with Cap',
+        tenantId: 'ten-2',
+        tenantName: 'Tariq Al-Hashimi'
+      },
+      {
+        id: 'unit-301',
+        propertyId: 'prop-3',
+        propertyName: 'Juffair Pearl Residence',
+        unitNumber: 'APT 302',
+        type: 'Residential Apartment',
+        floor: '3rd Floor',
+        rentAmount: 550,
+        bedrooms: 2,
+        bathrooms: 2,
+        status: 'Occupied',
+        ewaAccountNo: 'EWA-4493021-9',
+        ewaCap: 60,
+        ewaResponsibility: 'Included with Cap',
+        tenantId: 'ten-3',
+        tenantName: 'Sarah Jenkins'
+      }
+    ];
+
+    const INITIAL_LEASES = [
+      {
+        id: 'lease-101',
+        unitId: 'unit-101',
+        unitNumber: '101 (Seef Heights)',
+        tenantId: 'ten-1',
+        tenantName: 'Gulf FinTech Solutions W.L.L.',
+        cprOrCr: 'CR-109283-1',
+        cprType: 'CR',
+        startDate: '2025-01-01',
+        endDate: '2026-12-31',
+        monthlyRent: 1200,
+        securityDeposit: 1200,
+        ewaCap: 150,
+        municipalityRegNo: 'MUN-REG-2025-0192',
+        status: 'Active',
+        rentOutstanding: 0,
+        paymentHistory: [
+          { id: 'pay-1', date: '2026-10-01', amount: 1200, period: 'October 2026', method: 'BenefitPay', receiptNo: 'REC-BHD-9921' },
+          { id: 'pay-2', date: '2026-09-01', amount: 1200, period: 'September 2026', method: 'Bank Transfer', receiptNo: 'REC-BHD-9011' }
+        ]
+      },
+      {
+        id: 'lease-102',
+        unitId: 'unit-201',
+        unitNumber: 'Villa 04 (Amwaj)',
+        tenantId: 'ten-2',
+        tenantName: 'Tariq Al-Hashimi',
+        cprOrCr: 'CPR 880319203',
+        cprType: 'CPR',
+        startDate: '2025-11-15',
+        endDate: '2026-11-14', // Expiring soon
+        monthlyRent: 1850,
+        securityDeposit: 2000,
+        ewaCap: 250,
+        municipalityRegNo: 'MUN-REG-2025-0441',
+        status: 'Expiring Soon',
+        rentOutstanding: 1850,
+        paymentHistory: [
+          { id: 'pay-3', date: '2026-09-15', amount: 1850, period: 'Sep-Oct 2026', method: 'BenefitPay', receiptNo: 'REC-BHD-8812' }
+        ]
+      },
+      {
+        id: 'lease-103',
+        unitId: 'unit-301',
+        unitNumber: 'APT 302 (Juffair Pearl)',
+        tenantId: 'ten-3',
+        tenantName: 'Sarah Jenkins',
+        cprOrCr: 'CPR 910214883',
+        cprType: 'CPR',
+        startDate: '2026-01-01',
+        endDate: '2026-12-31',
+        monthlyRent: 550,
+        securityDeposit: 550,
+        ewaCap: 60,
+        municipalityRegNo: 'MUN-REG-2026-0610',
+        status: 'Active',
+        rentOutstanding: 0,
+        paymentHistory: [
+          { id: 'pay-4', date: '2026-10-01', amount: 550, period: 'October 2026', method: 'Credit Card', receiptNo: 'REC-BHD-9943' }
+        ]
+      }
+    ];
+
+    const INITIAL_REACTIVE_MAINTENANCE = [
+      {
+        id: 'TICK-101',
+        unitId: 'unit-201',
+        unitName: 'Villa 04 (Amwaj)',
+        tenantName: 'Tariq Al-Hashimi',
+        title: 'AC Main Compressor Cooling Failure',
+        category: 'HVAC / Air Conditioning',
+        priority: 'Emergency', // 4 hours SLA
+        slaTargetHours: 4,
+        createdAt: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(),
+        status: 'In Progress',
+        assignedTo: 'Youssef Maintenance Tech',
+        description: 'Chiller unit in ground floor living area stopped cooling completely. Making buzzing sound.',
+        notes: 'Technician on site. Capacitor replaced, refilling R410A refrigerant gas.',
+        partsCostBHD: 45.0,
+        laborCostBHD: 20.0
+      },
+      {
+        id: 'TICK-102',
+        unitId: 'unit-101',
+        unitName: '101 (Seef Heights)',
+        tenantName: 'Gulf FinTech Solutions W.L.L.',
+        title: 'Executive Bathroom Water Leak',
+        category: 'Plumbing',
+        priority: 'High', // 24 hours SLA
+        slaTargetHours: 24,
+        createdAt: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
+        status: 'Pending Tech',
+        assignedTo: 'Mahmood Plumbing Specialist',
+        description: 'Minor water leakage under the wash basin counter.',
+        notes: 'Scheduled for tech visit today at 3 PM.',
+        partsCostBHD: 0,
+        laborCostBHD: 0
+      },
+      {
+        id: 'TICK-103',
+        unitId: 'unit-301',
+        unitName: 'APT 302 (Juffair Pearl)',
+        tenantName: 'Sarah Jenkins',
+        title: 'Intercom System Screen Unresponsive',
+        category: 'Electrical & Automation',
+        priority: 'Medium', // 48 hours SLA
+        slaTargetHours: 48,
+        createdAt: new Date(Date.now() - 50 * 60 * 60 * 1000).toISOString(), // Breached
+        status: 'In Progress',
+        assignedTo: 'Ali Electrician',
+        description: 'Video intercom screen flickers and fails to unlock main entry gate.',
+        notes: 'Ordered replacement screen motherboard from local supplier.',
+        partsCostBHD: 35.0,
+        laborCostBHD: 15.0
+      }
+    ];
+
+    const INITIAL_PROACTIVE_SCHEDULES = [
+      {
+        id: 'pro-1',
+        title: 'Quarterly HVAC & Split AC Servicing',
+        propertyId: 'prop-1',
+        propertyName: 'Seef Heights Tower',
+        frequency: 'Quarterly',
+        lastPerformed: '2026-07-10',
+        nextDue: '2026-10-25',
+        assignedTech: 'CoolTech HVAC Bahrain',
+        status: 'Upcoming'
+      },
+      {
+        id: 'pro-2',
+        title: 'Monthly Elevator Safety & Load Inspection',
+        propertyId: 'prop-1',
+        propertyName: 'Seef Heights Tower',
+        frequency: 'Monthly',
+        lastPerformed: '2026-09-05',
+        nextDue: '2026-10-05',
+        assignedTech: 'Otis Elevators W.L.L.',
+        status: 'Overdue'
+      },
+      {
+        id: 'pro-3',
+        title: 'Bi-Annual Fire Alarm & Water Sprinkler Test',
+        propertyId: 'prop-2',
+        propertyName: 'Amwaj Waterside Villas',
+        frequency: 'Bi-Annual',
+        lastPerformed: '2026-04-15',
+        nextDue: '2026-10-15',
+        assignedTech: 'Bahrain Fire Protection Co.',
+        status: 'Due Soon'
+      },
+      {
+        id: 'pro-4',
+        title: 'Water Tank Cleaning & Chemical Chlorination',
+        propertyId: 'prop-3',
+        propertyName: 'Juffair Pearl Residence',
+        frequency: 'Bi-Annual',
+        lastPerformed: '2026-05-01',
+        nextDue: '2026-11-01',
+        assignedTech: 'PureWater Hygiene W.L.L.',
+        status: 'Upcoming'
+      }
+    ];
+
+    const INITIAL_INVITES = [
+      {
+        id: 'inv-1',
+        unitId: 'unit-102',
+        propertyName: 'Seef Heights Tower',
+        unitNumber: '102',
+        tenantEmail: 'newtenant@bahrainbusiness.com',
+        token: 'BH-INV-9920192',
+        createdAt: '2026-10-20',
+        status: 'Pending'
+      }
+    ];
+
+    // Helper to format currency in Bahraini Dinar (BHD 1,250.000)
+    const formatBHD = (amount) => {
+      return new Intl.NumberFormat('en-BH', {
+        style: 'currency',
+        currency: 'BHD',
+        minimumFractionDigits: 3,
+        maximumFractionDigits: 3
+      }).format(amount || 0);
+    };
+
+    // --- MAIN APP COMPONENT ---
+    function App() {
+      // Role & Navigation
+      const [currentRole, setCurrentRole] = useState('admin');
+      const [activeTab, setActiveTab] = useState('dashboard');
+      
+      // Core Data States
+      const [properties, setProperties] = useState(INITIAL_PROPERTIES);
+      const [units, setUnits] = useState(INITIAL_UNITS);
+      const [leases, setLeases] = useState(INITIAL_LEASES);
+      const [reactiveTickets, setReactiveTickets] = useState(INITIAL_REACTIVE_MAINTENANCE);
+      const [proactiveSchedules, setProactiveSchedules] = useState(INITIAL_PROACTIVE_SCHEDULES);
+      const [invites, setInvites] = useState(INITIAL_INVITES);
+
+      // Active Tenant Selection Context
+      const [activeTenantId, setActiveTenantId] = useState('ten-2');
+
+      // Modals Control
+      const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+      const [isAddPropertyModalOpen, setIsAddPropertyModalOpen] = useState(false);
+      const [isAddUnitModalOpen, setIsAddUnitModalOpen] = useState(false);
+      const [isAddTicketModalOpen, setIsAddTicketModalOpen] = useState(false);
+      const [isPaymentReceiptModalOpen, setIsPaymentReceiptModalOpen] = useState(null);
+
+      // Form local state
+      const [newInviteEmail, setNewInviteEmail] = useState('');
+      const [newInviteUnitId, setNewInviteUnitId] = useState('');
+      const [inviteGeneratedLink, setInviteGeneratedLink] = useState('');
+
+      // Toast Notification
+      const [toastMessage, setToastMessage] = useState(null);
+
+      const triggerToast = (msg) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(null), 4000);
+      };
+
+      // Metrics
+      const totalProperties = properties.length;
+      const totalUnits = units.length;
+      const occupiedUnits = units.filter(u => u.status === 'Occupied').length;
+      const occupancyRate = totalUnits > 0 ? ((occupiedUnits / totalUnits) * 100).toFixed(1) : 0;
+      const monthlyRevenueBHD = leases.reduce((acc, l) => acc + (l.status !== 'Terminated' ? l.monthlyRent : 0), 0);
+      const totalOutstandingBHD = leases.reduce((acc, l) => acc + (l.rentOutstanding || 0), 0);
+
+      // SLA Monitor Calculation
+      const getTicketSlaStatus = (ticket) => {
+        if (ticket.status === 'Resolved') return { label: 'Resolved', color: 'bg-emerald-900/40 text-emerald-300 border-emerald-700' };
+        const created = new Date(ticket.createdAt).getTime();
+        const now = Date.now();
+        const elapsedHours = (now - created) / (1000 * 60 * 60);
+        const remainingHours = ticket.slaTargetHours - elapsedHours;
+
+        if (remainingHours <= 0) {
+          return { label: 'SLA Breached', color: 'bg-rose-900/60 text-rose-200 border-rose-500 animate-pulse', isBreached: true, hoursLeft: 0 };
+        } else if (remainingHours <= 2) {
+          return { label: `SLA Warning (${remainingHours.toFixed(1)}h left)`, color: 'bg-amber-900/60 text-amber-200 border-amber-600', isBreached: false, hoursLeft: remainingHours };
+        } else {
+          return { label: `Within SLA (${remainingHours.toFixed(1)}h left)`, color: 'bg-sky-900/50 text-sky-200 border-sky-600', isBreached: false, hoursLeft: remainingHours };
+        }
+      };
+
+      // Tenant Context Data
+      const currentTenantLease = useMemo(() => {
+        return leases.find(l => l.tenantId === activeTenantId) || leases[0];
+      }, [leases, activeTenantId]);
+
+      const currentTenantUnit = useMemo(() => {
+        if (!currentTenantLease) return null;
+        return units.find(u => u.id === currentTenantLease.unitId);
+      }, [units, currentTenantLease]);
+
+      const currentTenantTickets = useMemo(() => {
+        if (!currentTenantUnit) return [];
+        return reactiveTickets.filter(t => t.unitId === currentTenantUnit.id);
+      }, [reactiveTickets, currentTenantUnit]);
+
+      // Technician Actions
+      const handleUpdateTicketStatus = (ticketId, newStatus, workNotes, addPartsCost, addLaborCost) => {
+        setReactiveTickets(prev => prev.map(t => {
+          if (t.id === ticketId) {
+            return {
+              ...t,
+              status: newStatus,
+              notes: workNotes || t.notes,
+              partsCostBHD: (t.partsCostBHD || 0) + (parseFloat(addPartsCost) || 0),
+              laborCostBHD: (t.laborCostBHD || 0) + (parseFloat(addLaborCost) || 0)
+            };
+          }
+          return t;
+        }));
+        triggerToast(`Ticket ${ticketId} updated successfully.`);
+      };
+
+      // Payment Logging
+      const handleRecordPayment = (leaseId, amount) => {
+        setLeases(prev => prev.map(l => {
+          if (l.id === leaseId) {
+            const newOutstanding = Math.max(0, l.rentOutstanding - amount);
+            const newReceipt = {
+              id: `pay-${Date.now()}`,
+              date: new Date().toISOString().split('T')[0],
+              amount: parseFloat(amount),
+              period: 'Current Month Rent',
+              method: 'BenefitPay (Online)',
+              receiptNo: `REC-BHD-${Math.floor(1000 + Math.random() * 9000)}`
+            };
+            return {
+              ...l,
+              rentOutstanding: newOutstanding,
+              paymentHistory: [newReceipt, ...l.paymentHistory]
+            };
+          }
+          return l;
+        }));
+        triggerToast(`Payment of ${formatBHD(amount)} logged! Receipt generated.`);
+      };
+
+      // Generate Invites
+      const handleGenerateInvite = (e) => {
+        e.preventDefault();
+        if (!newInviteUnitId || !newInviteEmail) return;
+        const selectedUnit = units.find(u => u.id === newInviteUnitId);
+        const token = `BH-INV-${Math.floor(100000 + Math.random() * 900000)}`;
+        const inviteObj = {
+          id: `inv-${Date.now()}`,
+          unitId: newInviteUnitId,
+          propertyName: selectedUnit ? selectedUnit.propertyName : 'Property',
+          unitNumber: selectedUnit ? selectedUnit.unitNumber : 'Unit',
+          tenantEmail: newInviteEmail,
+          token: token,
+          createdAt: new Date().toISOString().split('T')[0],
+          status: 'Pending'
+        };
+        setInvites([inviteObj, ...invites]);
+        const link = `https://property-bahrain.portal/activate?token=${token}&unit=${newInviteUnitId}`;
+        setInviteGeneratedLink(link);
+        triggerToast('Activation Token generated successfully!');
+      };
+
+      // New Property Handler
+      const handleAddProperty = (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const newProp = {
+          id: `prop-${Date.now()}`,
+          name: form.propName.value,
+          type: form.propType.value,
+          location: form.location.value,
+          municipalityNo: form.municipalityNo.value,
+          ownerId: 'own-1',
+          ownerName: 'Al-Mansoor Real Estate W.L.L.',
+          totalUnits: parseInt(form.totalUnits.value) || 1,
+          image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=600&q=80'
+        };
+        setProperties([...properties, newProp]);
+        setIsAddPropertyModalOpen(false);
+        triggerToast(`Property "${newProp.name}" created!`);
+      };
+
+      // New Unit Handler
+      const handleAddUnit = (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const selProp = properties.find(p => p.id === form.propId.value);
+        const newU = {
+          id: `unit-${Date.now()}`,
+          propertyId: form.propId.value,
+          propertyName: selProp ? selProp.name : 'Property',
+          unitNumber: form.unitNumber.value,
+          type: form.unitType.value,
+          floor: form.floor.value,
+          rentAmount: parseFloat(form.rentAmount.value) || 0,
+          bedrooms: parseInt(form.bedrooms.value) || 0,
+          bathrooms: parseInt(form.bathrooms.value) || 1,
+          status: 'Vacant',
+          ewaAccountNo: form.ewaAccountNo.value,
+          ewaCap: parseFloat(form.ewaCap.value) || 0,
+          ewaResponsibility: 'Included with Cap',
+          tenantId: null,
+          tenantName: null
+        };
+        setUnits([...units, newU]);
+        setIsAddUnitModalOpen(false);
+        triggerToast(`Unit ${newU.unitNumber} added to portfolio!`);
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col font-sans bg-slate-900 text-slate-100">
+
+          {/* --- TOP PERSPECTIVE / ROLE SWITCHER HEADER --- */}
+          <header className="bg-slate-950 border-b border-slate-800 sticky top-0 z-40 px-4 py-3 shadow-xl">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+              {/* Brand Logo & Tag */}
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center text-white font-bold shadow-md shadow-red-900/30">
+                  <Icon name="Building2" className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h1 className="font-bold text-lg text-white tracking-tight">Executive Facility Management</h1>
+                    <span className="bg-red-900/50 text-red-300 text-xs px-2 py-0.5 rounded border border-red-700/50 font-mono">
+                      BH (BHD)
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">Kingdom of Bahrain Real Estate & SLA Maintenance Portal</p>
+                </div>
+              </div>
+
+              {/* Role Switcher Toolbar */}
+              <div className="bg-slate-900 p-1 rounded-xl border border-slate-800 flex items-center space-x-1 overflow-x-auto max-w-full">
+                <button
+                  onClick={() => { setCurrentRole('admin'); setActiveTab('dashboard'); }}
+                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    currentRole === 'admin' ? 'bg-amber-500 text-slate-950 font-semibold shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
+                >
+                  <Icon name="ShieldCheck" className="w-3.5 h-3.5" />
+                  <span>Admin / Manager</span>
+                </button>
+
+                <button
+                  onClick={() => { setCurrentRole('tech'); setActiveTab('tech-workbench'); }}
+                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    currentRole === 'tech' ? 'bg-amber-500 text-slate-950 font-semibold shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
+                >
+                  <Icon name="Wrench" className="w-3.5 h-3.5" />
+                  <span>Maintenance Team</span>
+                </button>
+
+                <button
+                  onClick={() => { setCurrentRole('tenant'); setActiveTab('tenant-overview'); }}
+                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    currentRole === 'tenant' ? 'bg-amber-500 text-slate-950 font-semibold shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
+                >
+                  <Icon name="Users" className="w-3.5 h-3.5" />
+                  <span>Tenant Portal</span>
+                </button>
+
+                <button
+                  onClick={() => { setCurrentRole('owner'); setActiveTab('owner-dashboard'); }}
+                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    currentRole === 'owner' ? 'bg-amber-500 text-slate-950 font-semibold shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
+                >
+                  <Icon name="PieChart" className="w-3.5 h-3.5" />
+                  <span>Property Owner</span>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {/* --- TOAST NOTIFICATION --- */}
+          {toastMessage && (
+            <div className="fixed bottom-5 right-5 z-50 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 border border-emerald-400 animate-bounce">
+              <Icon name="CheckCircle2" className="w-5 h-5 text-white" />
+              <span className="text-sm font-medium">{toastMessage}</span>
+            </div>
+          )}
+
+          {/* --- MAIN BODY LAYOUT --- */}
+          <div className="flex-1 flex max-w-7xl w-full mx-auto px-4 py-6 gap-6">
+
+            {/* --- SIDEBAR NAVIGATION --- */}
+            <aside className="w-64 flex-shrink-0 hidden md:block">
+              <div className="bg-slate-950 rounded-2xl border border-slate-800 p-4 sticky top-24 space-y-6 shadow-xl">
+
+                {/* ADMIN NAV */}
+                {currentRole === 'admin' && (
+                  <div className="space-y-1">
+                    <div className="px-3 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider font-mono">Manager Console</div>
+                    <button
+                      onClick={() => setActiveTab('dashboard')}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                        activeTab === 'dashboard' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon name="Home" className="w-4 h-4" />
+                      <span>Overview & KPIs</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('properties')}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                        activeTab === 'properties' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon name="Building2" className="w-4 h-4" />
+                      <span>Properties & Units</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('leases')}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                        activeTab === 'leases' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon name="FileText" className="w-4 h-4" />
+                      <span>Leases & Tenants</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('invites')}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                        activeTab === 'invites' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon name="UserPlus" className="w-4 h-4" />
+                      <span>Tenant Invitations</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('maintenance')}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                        activeTab === 'maintenance' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon name="Wrench" className="w-4 h-4" />
+                      <span>SLA Maintenance Queue</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* TECHNICIAN NAV */}
+                {currentRole === 'tech' && (
+                  <div className="space-y-1">
+                    <div className="px-3 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider font-mono">Tech Dispatch</div>
+                    <button
+                      onClick={() => setActiveTab('tech-workbench')}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                        activeTab === 'tech-workbench' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon name="Wrench" className="w-4 h-4" />
+                      <span>Reactive Work Orders</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('tech-proactive')}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                        activeTab === 'tech-proactive' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon name="RefreshCw" className="w-4 h-4" />
+                      <span>Proactive Schedules</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* TENANT NAV */}
+                {currentRole === 'tenant' && (
+                  <div className="space-y-1">
+                    <div className="px-3 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider font-mono">Tenant Portal</div>
+                    <div className="px-3 py-2 mb-2 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
+                      <p className="text-[10px] text-slate-400 font-mono">Select Active Tenant Profile:</p>
+                      <select
+                        value={activeTenantId}
+                        onChange={(e) => setActiveTenantId(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg text-xs p-1.5 text-slate-200 focus:outline-none"
+                      >
+                        <option value="ten-1">Gulf FinTech (Office 101)</option>
+                        <option value="ten-2">Tariq Al-Hashimi (Amwaj Villa 04)</option>
+                        <option value="ten-3">Sarah Jenkins (Juffair APT 302)</option>
+                      </select>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('tenant-overview')}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                        activeTab === 'tenant-overview' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon name="Home" className="w-4 h-4" />
+                      <span>Lease & Rent Summary</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('tenant-tickets')}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                        activeTab === 'tenant-tickets' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon name="Wrench" className="w-4 h-4" />
+                      <span>Report Issues & Tickets</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* OWNER NAV */}
+                {currentRole === 'owner' && (
+                  <div className="space-y-1">
+                    <div className="px-3 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider font-mono">Investor Console</div>
+                    <button
+                      onClick={() => setActiveTab('owner-dashboard')}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                        activeTab === 'owner-dashboard' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon name="PieChart" className="w-4 h-4" />
+                      <span>Financial NOI Performance</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* BAHRAIN COMPLIANCE INFO */}
+                <div className="pt-4 border-t border-slate-800">
+                  <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs text-slate-400 space-y-2">
+                    <div className="flex items-center text-amber-400 font-semibold space-x-1.5">
+                      <Icon name="Shield" className="w-4 h-4" />
+                      <span>Bahrain Regulatory Suite</span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-slate-400">
+                      VAT Exempt rental invoicing. EWA account caps and CPR/CR automated register.
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+            </aside>
+
+            {/* --- MAIN CONTENT AREA --- */}
+            <main className="flex-1 space-y-6">
+
+              {/* ======================================================== */}
+              {/* TAB 1: ADMIN DASHBOARD / OVERVIEW                        */}
+              {/* ======================================================== */}
+              {currentRole === 'admin' && activeTab === 'dashboard' && (
+                <div className="space-y-6">
+                  
+                  {/* KPI Cards Header */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    
+                    <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-slate-400">Occupancy Rate</span>
+                        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                          <Icon name="Building2" className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <span className="text-2xl font-bold text-white">{occupancyRate}%</span>
+                        <span className="text-xs text-slate-400 ml-2">({occupiedUnits}/{totalUnits} Units)</span>
+                      </div>
+                      <div className="mt-2 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${occupancyRate}%` }}></div>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-slate-400">Monthly Lease Income</span>
+                        <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+                          <Icon name="DollarSign" className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <span className="text-xl font-bold text-white">{formatBHD(monthlyRevenueBHD)}</span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-2">Active contractual total</p>
+                    </div>
+
+                    <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-slate-400">Uncollected Rent</span>
+                        <div className="p-2 rounded-lg bg-rose-500/10 text-rose-400">
+                          <Icon name="AlertCircle" className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <span className="text-xl font-bold text-rose-400">{formatBHD(totalOutstandingBHD)}</span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-2">Pending tenant receivables</p>
+                    </div>
+
+                    <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-slate-400">Active SLA Tickets</span>
+                        <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400">
+                          <Icon name="Wrench" className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <span className="text-2xl font-bold text-white">
+                          {reactiveTickets.filter(t => t.status !== 'Resolved').length}
+                        </span>
+                        <span className="text-xs text-amber-400 ml-2 font-medium">
+                          ({reactiveTickets.filter(t => getTicketSlaStatus(t).isBreached).length} Overdue)
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-2">Strict resolution targets</p>
+                    </div>
+
+                  </div>
+
+                  {/* Middle Widgets: Urgent Tickets & Properties Breakdown */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                    {/* SLA Monitor Widget */}
+                    <div className="bg-slate-950 rounded-2xl border border-slate-800 p-5 shadow-xl">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          <Icon name="AlertTriangle" className="w-5 h-5 text-amber-400" />
+                          <h3 className="font-semibold text-white text-sm">Urgent SLA Reactive Queue</h3>
+                        </div>
+                        <button
+                          onClick={() => setActiveTab('maintenance')}
+                          className="text-xs text-amber-400 hover:underline flex items-center space-x-1"
+                        >
+                          <span>View Queue</span>
+                          <Icon name="ChevronRight" className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {reactiveTickets.filter(t => t.status !== 'Resolved').map(ticket => {
+                          const sla = getTicketSlaStatus(ticket);
+                          return (
+                            <div key={ticket.id} className="bg-slate-900 p-4 rounded-xl border border-slate-800 hover:border-slate-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-mono text-xs font-semibold text-amber-400">{ticket.id}</span>
+                                  <span className="text-xs font-semibold text-white">{ticket.title}</span>
+                                </div>
+                                <p className="text-xs text-slate-400 mt-1">{ticket.unitName} • Assigned: {ticket.assignedTo}</p>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <span className={`px-2.5 py-1 rounded-full text-xs font-mono font-medium border ${sla.color}`}>
+                                  {sla.label}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Properties Overview Widget */}
+                    <div className="bg-slate-950 rounded-2xl border border-slate-800 p-5 shadow-xl">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          <Icon name="Building2" className="w-5 h-5 text-amber-400" />
+                          <h3 className="font-semibold text-white text-sm">Property Portfolio Summary</h3>
+                        </div>
+                        <button
+                          onClick={() => setIsAddPropertyModalOpen(true)}
+                          className="text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 px-2.5 py-1.5 rounded-xl font-bold flex items-center space-x-1 shadow"
+                        >
+                          <Icon name="Plus" className="w-3.5 h-3.5" />
+                          <span>Add Property</span>
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {properties.map(p => {
+                          const propUnits = units.filter(u => u.propertyId === p.id);
+                          const propOccupied = propUnits.filter(u => u.status === 'Occupied').length;
+                          return (
+                            <div key={p.id} className="bg-slate-900 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <img src={p.image} alt={p.name} className="w-12 h-12 rounded-lg object-cover" />
+                                <div>
+                                  <p className="font-semibold text-xs text-white">{p.name}</p>
+                                  <p className="text-[11px] text-slate-400">{p.location}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs font-medium text-slate-300">{propOccupied} / {p.totalUnits} Units Occupied</p>
+                                <span className="text-[10px] text-amber-400 font-mono">MUN: {p.municipalityNo}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+              )}
+
+              {/* ======================================================== */}
+              {/* TAB 2: PROPERTIES & UNITS MANAGEMENT                     */}
+              {/* ======================================================== */}
+              {currentRole === 'admin' && activeTab === 'properties' && (
+                <div className="space-y-6">
+                  
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                    <div>
+                      <h2 className="text-base font-bold text-white">Properties & Units Master Register</h2>
+                      <p className="text-xs text-slate-400">Manage Bahrain buildings, luxury villas, and unit EWA caps.</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setIsAddPropertyModalOpen(true)}
+                        className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1 border border-slate-700"
+                      >
+                        <Icon name="Plus" className="w-4 h-4" />
+                        <span>New Property</span>
+                      </button>
+                      <button
+                        onClick={() => setIsAddUnitModalOpen(true)}
+                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-1"
+                      >
+                        <Icon name="Plus" className="w-4 h-4" />
+                        <span>New Unit</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Units Table */}
+                  <div className="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+                    <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                      <h3 className="font-semibold text-xs text-white">Unit Breakdown & EWA Details</h3>
+                      <span className="text-xs text-slate-400 font-mono">{units.length} Units Registered</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs text-slate-300">
+                        <thead className="bg-slate-900 text-slate-400 uppercase font-mono border-b border-slate-800">
+                          <tr>
+                            <th className="p-3">Unit # / Property</th>
+                            <th className="p-3">Type & Layout</th>
+                            <th className="p-3">Status</th>
+                            <th className="p-3">Rent (BHD)</th>
+                            <th className="p-3">EWA Account #</th>
+                            <th className="p-3">EWA Monthly Cap</th>
+                            <th className="p-3 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60">
+                          {units.map(unit => (
+                            <tr key={unit.id} className="hover:bg-slate-900/50 transition-all">
+                              <td className="p-3 font-semibold text-white">
+                                <div>{unit.unitNumber}</div>
+                                <div className="text-[11px] text-slate-400 font-normal">{unit.propertyName}</div>
+                              </td>
+                              <td className="p-3">
+                                <div>{unit.type}</div>
+                                <div className="text-[11px] text-slate-400">{unit.bedrooms} Bed • {unit.bathrooms} Bath</div>
+                              </td>
+                              <td className="p-3">
+                                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
+                                  unit.status === 'Occupied' ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-800' :
+                                  unit.status === 'Vacant' ? 'bg-amber-900/40 text-amber-400 border border-amber-800' :
+                                  'bg-rose-900/40 text-rose-400 border border-rose-800'
+                                }`}>
+                                  {unit.status}
+                                </span>
+                              </td>
+                              <td className="p-3 font-bold text-amber-400">{formatBHD(unit.rentAmount)}</td>
+                              <td className="p-3 font-mono text-slate-300">{unit.ewaAccountNo}</td>
+                              <td className="p-3">
+                                <span className="font-bold text-slate-200">{formatBHD(unit.ewaCap)}</span>
+                                <span className="block text-[10px] text-slate-400">{unit.ewaResponsibility}</span>
+                              </td>
+                              <td className="p-3 text-right">
+                                <button
+                                  onClick={() => triggerToast(`Editing unit ${unit.unitNumber}`)}
+                                  className="p-1.5 bg-slate-900 hover:bg-slate-800 rounded-lg text-slate-300 border border-slate-700"
+                                >
+                                  <Icon name="Edit" className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* ======================================================== */}
+              {/* TAB 3: LEASES & TENANTS MANAGEMENT                        */}
+              {/* ======================================================== */}
+              {currentRole === 'admin' && activeTab === 'leases' && (
+                <div className="space-y-6">
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                    <div>
+                      <h2 className="text-base font-bold text-white">Tenancy Agreements & CPR/CR Register</h2>
+                      <p className="text-xs text-slate-400">Track lease start/end dates, municipality registrations, and outstanding rent.</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+                    <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                      <h3 className="font-semibold text-xs text-white">Active & Expiring Leases</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs text-slate-300">
+                        <thead className="bg-slate-900 text-slate-400 uppercase font-mono border-b border-slate-800">
+                          <tr>
+                            <th className="p-3">Tenant Name</th>
+                            <th className="p-3">CPR / CR No.</th>
+                            <th className="p-3">Unit</th>
+                            <th className="p-3">Lease Period</th>
+                            <th className="p-3">Rent / Mo.</th>
+                            <th className="p-3">Municipality Reg #</th>
+                            <th className="p-3">Outstanding</th>
+                            <th className="p-3 text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60">
+                          {leases.map(lease => (
+                            <tr key={lease.id} className="hover:bg-slate-900/50 transition-all">
+                              <td className="p-3 font-semibold text-white">
+                                {lease.tenantName}
+                              </td>
+                              <td className="p-3 font-mono text-slate-300">
+                                <span className="bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 text-[11px]">
+                                  {lease.cprOrCr}
+                                </span>
+                              </td>
+                              <td className="p-3">{lease.unitNumber}</td>
+                              <td className="p-3">
+                                <div className="font-mono text-[11px]">{lease.startDate} → {lease.endDate}</div>
+                                {lease.status === 'Expiring Soon' && (
+                                  <span className="text-[10px] bg-amber-900/40 text-amber-400 px-1.5 py-0.5 rounded font-semibold border border-amber-800">
+                                    Renewal Due (&lt;30d)
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-3 font-bold text-slate-100">{formatBHD(lease.monthlyRent)}</td>
+                              <td className="p-3 font-mono text-xs text-slate-400">{lease.municipalityRegNo}</td>
+                              <td className="p-3 font-bold text-rose-400">
+                                {lease.rentOutstanding > 0 ? formatBHD(lease.rentOutstanding) : <span className="text-emerald-400">Paid</span>}
+                              </td>
+                              <td className="p-3 text-right">
+                                {lease.rentOutstanding > 0 && (
+                                  <button
+                                    onClick={() => handleRecordPayment(lease.id, lease.monthlyRent)}
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] px-2.5 py-1 rounded-lg font-bold"
+                                  >
+                                    Log Payment
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* ======================================================== */}
+              {/* TAB 4: TENANT INVITATIONS ENGINE                         */}
+              {/* ======================================================== */}
+              {currentRole === 'admin' && activeTab === 'invites' && (
+                <div className="space-y-6">
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-950 p-5 rounded-2xl border border-slate-800">
+                    <div>
+                      <h2 className="text-base font-bold text-white">Tenant Onboarding & Invite Portal</h2>
+                      <p className="text-xs text-slate-400">Generate secure unit-bound activation tokens for tenants.</p>
+                    </div>
+                    <button
+                      onClick={() => setIsInviteModalOpen(true)}
+                      className="bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 shadow-lg"
+                    >
+                      <Icon name="UserPlus" className="w-4 h-4" />
+                      <span>Generate New Invite</span>
+                    </button>
+                  </div>
+
+                  {/* Active Invites List */}
+                  <div className="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-xl p-5">
+                    <h3 className="font-semibold text-xs text-white mb-4">Pending & Issued Invite Tokens</h3>
+                    <div className="space-y-3">
+                      {invites.map(inv => (
+                        <div key={inv.id} className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <span className="font-semibold text-white text-xs">{inv.tenantEmail}</span>
+                              <span className="bg-amber-900/50 text-amber-300 text-[10px] px-2 py-0.5 rounded font-mono border border-amber-700">
+                                Token: {inv.token}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-400 mt-1">Bound to: {inv.propertyName} - {inv.unitNumber} | Issued: {inv.createdAt}</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => {
+                                const link = `https://property-bahrain.portal/activate?token=${inv.token}`;
+                                const el = document.createElement('textarea');
+                                el.value = link;
+                                document.body.appendChild(el);
+                                el.select();
+                                document.execCommand('copy');
+                                document.body.removeChild(el);
+                                triggerToast('Activation Link copied to clipboard!');
+                              }}
+                              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-xl flex items-center space-x-1 border border-slate-700"
+                            >
+                              <Icon name="Copy" className="w-3.5 h-3.5" />
+                              <span>Copy Link</span>
+                            </button>
+                            <button
+                              onClick={() => triggerToast(`Resending invite email to ${inv.tenantEmail}`)}
+                              className="px-3 py-1.5 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 text-xs rounded-xl flex items-center space-x-1 border border-amber-500/20"
+                            >
+                              <Icon name="Send" className="w-3.5 h-3.5" />
+                              <span>Resend Email</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* ======================================================== */}
+              {/* TAB 5: MAINTENANCE SLA CONTROL (ADMIN VIEW)               */}
+              {/* ======================================================== */}
+              {currentRole === 'admin' && activeTab === 'maintenance' && (
+                <div className="space-y-6">
+
+                  {/* Maintenance Metrics Top */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                      <span className="text-xs text-slate-400 font-medium">SLA Compliance Rate</span>
+                      <p className="text-2xl font-bold text-emerald-400 mt-1">92.8%</p>
+                      <p className="text-[11px] text-slate-500 mt-1">Target &gt; 90% in 30 days</p>
+                    </div>
+                    <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                      <span className="text-xs text-slate-400 font-medium">Mean Time to Resolution</span>
+                      <p className="text-2xl font-bold text-amber-400 mt-1">3.8 Hours</p>
+                      <p className="text-[11px] text-slate-500 mt-1">Emergency SLA target: 4h</p>
+                    </div>
+                    <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                      <span className="text-xs text-slate-400 font-medium">Total Maintenance Spend</span>
+                      <p className="text-2xl font-bold text-white mt-1">
+                        {formatBHD(reactiveTickets.reduce((a, b) => a + (b.partsCostBHD + b.laborCostBHD), 0))}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-1">Parts & Technician labor in BHD</p>
+                    </div>
+                  </div>
+
+                  {/* Reactive Tickets Full View */}
+                  <div className="bg-slate-950 rounded-2xl border border-slate-800 p-5 shadow-xl space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-bold text-white text-sm">Reactive Maintenance Queue</h3>
+                        <p className="text-xs text-slate-400">Strict SLA timers based on emergency level.</p>
+                      </div>
+                      <button
+                        onClick={() => setIsAddTicketModalOpen(true)}
+                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1"
+                      >
+                        <Icon name="Plus" className="w-3.5 h-3.5" />
+                        <span>Raise Ticket</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {reactiveTickets.map(ticket => {
+                        const sla = getTicketSlaStatus(ticket);
+                        return (
+                          <div key={ticket.id} className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div className="flex items-center space-x-2">
+                                <span className="px-2 py-0.5 bg-slate-800 text-amber-400 font-mono text-xs rounded font-bold">{ticket.id}</span>
+                                <span className="font-semibold text-white text-xs">{ticket.title}</span>
+                                <span className="text-xs text-slate-400">({ticket.category})</span>
+                              </div>
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-mono font-medium border ${sla.color}`}>
+                                {sla.label}
+                              </span>
+                            </div>
+
+                            <p className="text-xs text-slate-300">{ticket.description}</p>
+
+                            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800 text-xs text-slate-400">
+                              <div>
+                                Unit: <span className="text-slate-200 font-medium">{ticket.unitName}</span> | Priority: <span className="text-amber-400 font-bold">{ticket.priority} ({ticket.slaTargetHours}h)</span>
+                              </div>
+                              <div>
+                                Tech: <span className="text-slate-200">{ticket.assignedTo}</span>
+                              </div>
+                              <div className="font-mono text-slate-300">
+                                Total Cost: <span className="text-emerald-400 font-bold">{formatBHD(ticket.partsCostBHD + ticket.laborCostBHD)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* ======================================================== */}
+              {/* MAINTENANCE WORKBENCH (ROLE: TECH)                       */}
+              {/* ======================================================== */}
+              {currentRole === 'tech' && activeTab === 'tech-workbench' && (
+                <div className="space-y-6">
+
+                  <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800">
+                    <h2 className="text-base font-bold text-white flex items-center space-x-2">
+                      <Icon name="Wrench" className="w-5 h-5 text-amber-400" />
+                      <span>Technician Work Orders Queue</span>
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-1">Update job status, record parts/labor costs in BHD, and fulfill SLA tasks.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {reactiveTickets.map(ticket => (
+                      <div key={ticket.id} className="bg-slate-950 p-5 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-mono font-bold text-amber-400">{ticket.id}</span>
+                            <h3 className="font-bold text-white text-sm">{ticket.title}</h3>
+                            <p className="text-xs text-slate-400 mt-0.5">{ticket.unitName} • Category: {ticket.category}</p>
+                          </div>
+                          <span className="px-3 py-1 rounded-lg bg-amber-500/10 text-amber-400 text-xs font-bold border border-amber-500/20">
+                            {ticket.status}
+                          </span>
+                        </div>
+
+                        <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 text-xs text-slate-300">
+                          <strong>Issue Details:</strong> {ticket.description}
+                        </div>
+
+                        {/* Tech Control Box */}
+                        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-3">
+                          <h4 className="text-xs font-semibold text-slate-300 uppercase font-mono">Technician Log & Cost Input</h4>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                              <label className="text-[11px] text-slate-400 block mb-1">Status</label>
+                              <select
+                                defaultValue={ticket.status}
+                                onChange={(e) => handleUpdateTicketStatus(ticket.id, e.target.value, null, 0, 0)}
+                                className="w-full bg-slate-950 border border-slate-700 rounded-xl text-xs p-2 text-slate-200 focus:outline-none"
+                              >
+                                <option value="Pending Tech">Pending Tech</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="On Hold">On Hold (Parts Order)</option>
+                                <option value="Resolved">Resolved & SLA Complete</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="text-[11px] text-slate-400 block mb-1">Add Parts Cost (BHD)</label>
+                              <input
+                                type="number"
+                                placeholder="0.000"
+                                id={`parts-${ticket.id}`}
+                                className="w-full bg-slate-950 border border-slate-700 rounded-xl text-xs p-2 text-slate-200 focus:outline-none"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-[11px] text-slate-400 block mb-1">Add Labor Cost (BHD)</label>
+                              <input
+                                type="number"
+                                placeholder="0.000"
+                                id={`labor-${ticket.id}`}
+                                className="w-full bg-slate-950 border border-slate-700 rounded-xl text-xs p-2 text-slate-200 focus:outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] text-slate-400 block mb-1">Technician Work Notes</label>
+                            <input
+                              type="text"
+                              defaultValue={ticket.notes}
+                              id={`notes-${ticket.id}`}
+                              placeholder="Action details..."
+                              className="w-full bg-slate-950 border border-slate-700 rounded-xl text-xs p-2 text-slate-200 focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="flex justify-end pt-2">
+                            <button
+                              onClick={() => {
+                                const pCost = document.getElementById(`parts-${ticket.id}`).value;
+                                const lCost = document.getElementById(`labor-${ticket.id}`).value;
+                                const notes = document.getElementById(`notes-${ticket.id}`).value;
+                                handleUpdateTicketStatus(ticket.id, ticket.status, notes, pCost, lCost);
+                              }}
+                              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow"
+                            >
+                              Save Technician Logs
+                            </button>
+                          </div>
+
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                </div>
+              )}
+
+              {/* PROACTIVE SCHEDULES VIEW (ROLE: TECH) */}
+              {currentRole === 'tech' && activeTab === 'tech-proactive' && (
+                <div className="space-y-6">
+                  <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800">
+                    <h2 className="text-base font-bold text-white flex items-center space-x-2">
+                      <Icon name="RefreshCw" className="w-5 h-5 text-amber-400" />
+                      <span>Proactive Maintenance Schedules</span>
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-1">Preventative servicing for HVAC, Elevators, Fire Alarms, and Water Tanks.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {proactiveSchedules.map(sch => (
+                      <div key={sch.id} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3 shadow-xl">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-amber-400">{sch.propertyName}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded font-bold border ${
+                            sch.status === 'Overdue' ? 'bg-rose-900/50 text-rose-300 border-rose-700' :
+                            sch.status === 'Due Soon' ? 'bg-amber-900/50 text-amber-300 border-amber-700' :
+                            'bg-emerald-900/50 text-emerald-300 border-emerald-700'
+                          }`}>
+                            {sch.status}
+                          </span>
+                        </div>
+                        <h3 className="font-semibold text-white text-sm">{sch.title}</h3>
+                        <div className="text-xs text-slate-400 space-y-1">
+                          <p>Frequency: <span className="text-slate-200">{sch.frequency}</span></p>
+                          <p>Last Inspection: <span className="text-slate-200 font-mono">{sch.lastPerformed}</span></p>
+                          <p>Next Due Date: <span className="text-amber-400 font-mono font-bold">{sch.nextDue}</span></p>
+                          <p>Contractor: <span className="text-slate-200">{sch.assignedTech}</span></p>
+                        </div>
+                        <button
+                          onClick={() => triggerToast(`Scheduled service logged for ${sch.title}`)}
+                          className="w-full bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 py-2 rounded-xl text-xs font-semibold"
+                        >
+                          Mark Service Complete
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ======================================================== */}
+              {/* TENANT PORTAL VIEW (ROLE: TENANT)                         */}
+              {/* ======================================================== */}
+              {currentRole === 'tenant' && activeTab === 'tenant-overview' && currentTenantLease && (
+                <div className="space-y-6">
+
+                  {/* Lease Summary Card */}
+                  <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                      <div>
+                        <span className="text-xs font-mono text-amber-400">Lease Agreement</span>
+                        <h2 className="text-lg font-bold text-white">{currentTenantLease.tenantName}</h2>
+                        <p className="text-xs text-slate-400">{currentTenantLease.unitNumber}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-slate-400">Monthly Rent</span>
+                        <p className="text-2xl font-bold text-amber-400">{formatBHD(currentTenantLease.monthlyRent)}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 text-xs">
+                      <div>
+                        <span className="text-slate-400 block">Lease Start</span>
+                        <span className="font-semibold text-slate-200">{currentTenantLease.startDate}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">Lease End</span>
+                        <span className="font-semibold text-slate-200">{currentTenantLease.endDate}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">CPR / CR No.</span>
+                        <span className="font-semibold text-slate-200">{currentTenantLease.cprOrCr}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">EWA Monthly Cap</span>
+                        <span className="font-semibold text-emerald-400">{formatBHD(currentTenantLease.ewaCap)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Rent Payment Tracker */}
+                  <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-bold text-white text-sm">Rent Settlement & Receipts</h3>
+                        <p className="text-xs text-slate-400">Pay rent online via BenefitPay or Bank Transfer.</p>
+                      </div>
+                      {currentTenantLease.rentOutstanding > 0 ? (
+                        <button
+                          onClick={() => handleRecordPayment(currentTenantLease.id, currentTenantLease.monthlyRent)}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center space-x-2 shadow-lg"
+                        >
+                          <Icon name="Zap" className="w-4 h-4" />
+                          <span>Pay {formatBHD(currentTenantLease.rentOutstanding)} via BenefitPay</span>
+                        </button>
+                      ) : (
+                        <span className="bg-emerald-900/40 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold border border-emerald-800">
+                          Rent Settled
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Paid Receipts Table */}
+                    <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+                      <table className="w-full text-left text-xs text-slate-300">
+                        <thead className="bg-slate-950 text-slate-400 uppercase font-mono border-b border-slate-800">
+                          <tr>
+                            <th className="p-3">Receipt #</th>
+                            <th className="p-3">Payment Date</th>
+                            <th className="p-3">Period</th>
+                            <th className="p-3">Amount</th>
+                            <th className="p-3 text-right">Receipt</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800">
+                          {currentTenantLease.paymentHistory.map(pay => (
+                            <tr key={pay.id} className="hover:bg-slate-800/40">
+                              <td className="p-3 font-mono text-amber-400 font-semibold">{pay.receiptNo}</td>
+                              <td className="p-3 text-slate-300">{pay.date}</td>
+                              <td className="p-3">{pay.period}</td>
+                              <td className="p-3 font-bold text-white">{formatBHD(pay.amount)}</td>
+                              <td className="p-3 text-right">
+                                <button
+                                  onClick={() => setIsPaymentReceiptModalOpen(pay)}
+                                  className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 border border-slate-700"
+                                >
+                                  <Icon name="Download" className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* TENANT TICKETS SUB-TAB */}
+              {currentRole === 'tenant' && activeTab === 'tenant-tickets' && (
+                <div className="space-y-6">
+
+                  <div className="flex items-center justify-between bg-slate-950 p-5 rounded-2xl border border-slate-800">
+                    <div>
+                      <h2 className="text-base font-bold text-white">Maintenance Requests Portal</h2>
+                      <p className="text-xs text-slate-400">Report reactive maintenance issues for your leased unit.</p>
+                    </div>
+                    <button
+                      onClick={() => setIsAddTicketModalOpen(true)}
+                      className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center space-x-2 shadow-lg"
+                    >
+                      <Icon name="Plus" className="w-4 h-4" />
+                      <span>Report Issue</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {currentTenantTickets.map(ticket => (
+                      <div key={ticket.id} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-white text-xs">{ticket.title}</span>
+                          <span className="text-xs bg-slate-900 border border-slate-800 text-amber-400 px-2 py-0.5 rounded font-mono">
+                            {ticket.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400">{ticket.description}</p>
+                        {ticket.notes && (
+                          <div className="p-2.5 bg-slate-900 rounded-lg text-xs text-slate-300 border border-slate-800">
+                            <strong className="text-amber-400">Tech Note:</strong> {ticket.notes}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                </div>
+              )}
+
+              {/* ======================================================== */}
+              {/* PROPERTY OWNER VIEW (ROLE: OWNER)                        */}
+              {/* ======================================================== */}
+              {currentRole === 'owner' && (
+                <div className="space-y-6">
+
+                  <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl">
+                    <h2 className="text-lg font-bold text-white">Property Portfolio Financial Statement</h2>
+                    <p className="text-xs text-slate-400 mt-1">Net Operating Income (NOI) calculation in Bahraini Dinar (BHD).</p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+                      <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                        <span className="text-xs text-slate-400 font-medium">Gross Rental Revenue</span>
+                        <p className="text-2xl font-bold text-emerald-400 mt-1">{formatBHD(monthlyRevenueBHD)}</p>
+                      </div>
+                      <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                        <span className="text-xs text-slate-400 font-medium">Maintenance Expenses</span>
+                        <p className="text-2xl font-bold text-rose-400 mt-1">
+                          {formatBHD(reactiveTickets.reduce((a, b) => a + (b.partsCostBHD + b.laborCostBHD), 0))}
+                        </p>
+                      </div>
+                      <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                        <span className="text-xs text-slate-400 font-medium">Net Operating Income (NOI)</span>
+                        <p className="text-2xl font-bold text-amber-400 mt-1">
+                          {formatBHD(monthlyRevenueBHD - reactiveTickets.reduce((a, b) => a + (b.partsCostBHD + b.laborCostBHD), 0))}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Individual Property Earnings */}
+                  <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                    <h3 className="font-bold text-white text-xs uppercase tracking-wider font-mono">Property Earnings Breakdown</h3>
+                    <div className="space-y-3">
+                      {properties.map(p => {
+                        const propUnits = units.filter(u => u.propertyId === p.id);
+                        const propIncome = propUnits.reduce((acc, u) => acc + (u.status === 'Occupied' ? u.rentAmount : 0), 0);
+                        return (
+                          <div key={p.id} className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-white text-xs">{p.name}</p>
+                              <p className="text-[11px] text-slate-400">{p.type} • {p.location}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-amber-400 text-xs">{formatBHD(propIncome)} / mo</p>
+                              <span className="text-[10px] text-slate-400 font-mono">MUN #: {p.municipalityNo}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+            </main>
+          </div>
+
+          {/* ======================================================== */}
+          {/* MODAL: GENERATE INVITATION TOKEN                          */}
+          {/* ======================================================== */}
+          {isInviteModalOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <h3 className="font-bold text-white text-sm">Generate Tenant Invitation Token</h3>
+                  <button onClick={() => setIsInviteModalOpen(false)} className="text-slate-400 hover:text-white">
+                    <Icon name="X" className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleGenerateInvite} className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-300 block mb-1">Select Target Unit</label>
+                    <select
+                      value={newInviteUnitId}
+                      onChange={(e) => setNewInviteUnitId(e.target.value)}
+                      required
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none"
+                    >
+                      <option value="">-- Choose Unit --</option>
+                      {units.map(u => (
+                        <option key={u.id} value={u.id}>{u.propertyName} - Unit {u.unitNumber}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-300 block mb-1">Tenant Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      value={newInviteEmail}
+                      onChange={(e) => setNewInviteEmail(e.target.value)}
+                      placeholder="tenant@domain.bh"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none"
+                    />
+                  </div>
+
+                  {inviteGeneratedLink && (
+                    <div className="p-3 bg-slate-950 rounded-xl border border-emerald-500/30 text-xs space-y-2">
+                      <span className="text-emerald-400 font-semibold block">Generated Link:</span>
+                      <p className="font-mono text-[11px] text-slate-300 break-all">{inviteGeneratedLink}</p>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsInviteModalOpen(false)}
+                      className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl hover:bg-slate-700"
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl"
+                    >
+                      Generate Token
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* MODAL: CREATE MAINTENANCE TICKET                          */}
+          {/* ======================================================== */}
+          {isAddTicketModalOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <h3 className="font-bold text-white text-sm">Raise Maintenance Request</h3>
+                  <button onClick={() => setIsAddTicketModalOpen(false)} className="text-slate-400 hover:text-white">
+                    <Icon name="X" className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const form = e.target;
+                    const newTicket = {
+                      id: `TICK-${Math.floor(100 + Math.random() * 900)}`,
+                      unitId: form.unit.value,
+                      unitName: units.find(u => u.id === form.unit.value)?.unitNumber || 'Unit',
+                      tenantName: 'Submitted User',
+                      title: form.title.value,
+                      category: form.category.value,
+                      priority: form.priority.value,
+                      slaTargetHours: form.priority.value === 'Emergency' ? 4 : form.priority.value === 'High' ? 24 : 48,
+                      createdAt: new Date().toISOString(),
+                      status: 'Pending Tech',
+                      assignedTo: 'Dispatch Tech Pool',
+                      description: form.description.value,
+                      notes: '',
+                      partsCostBHD: 0,
+                      laborCostBHD: 0
+                    };
+                    setReactiveTickets([newTicket, ...reactiveTickets]);
+                    setIsAddTicketModalOpen(false);
+                    triggerToast('Maintenance ticket raised and SLA timer initialized!');
+                  }}
+                  className="space-y-3 text-xs"
+                >
+                  <div>
+                    <label className="text-slate-300 block mb-1">Select Property / Unit</label>
+                    <select name="unit" required className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200">
+                      {units.map(u => (
+                        <option key={u.id} value={u.id}>{u.propertyName} - {u.unitNumber}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-slate-300 block mb-1">Category</label>
+                      <select name="category" required className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200">
+                        <option value="HVAC / Air Conditioning">HVAC / Air Conditioning</option>
+                        <option value="Plumbing">Plumbing</option>
+                        <option value="Electrical">Electrical</option>
+                        <option value="Civil / Painting">Civil / Painting</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-slate-300 block mb-1">SLA Priority</label>
+                      <select name="priority" required className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200">
+                        <option value="Emergency">Emergency (4h SLA)</option>
+                        <option value="High">High (24h SLA)</option>
+                        <option value="Medium">Medium (48h SLA)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-slate-300 block mb-1">Issue Summary</label>
+                    <input name="title" required placeholder="Short title..." className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200" />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-300 block mb-1">Detailed Description</label>
+                    <textarea name="description" rows={3} required placeholder="Describe problem in detail..." className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200" />
+                  </div>
+
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <button type="button" onClick={() => setIsAddTicketModalOpen(false)} className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl">Cancel</button>
+                    <button type="submit" className="px-4 py-2 bg-amber-500 text-slate-950 font-bold rounded-xl">Submit Ticket</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* MODAL: ADD NEW PROPERTY                                  */}
+          {/* ======================================================== */}
+          {isAddPropertyModalOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <h3 className="font-bold text-white text-sm">Add New Property to Portfolio</h3>
+                  <button onClick={() => setIsAddPropertyModalOpen(false)} className="text-slate-400 hover:text-white">
+                    <Icon name="X" className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleAddProperty} className="space-y-3 text-xs">
+                  <div>
+                    <label className="text-slate-300 block mb-1">Property Name</label>
+                    <input name="propName" required placeholder="e.g. Reef Island Heights" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200" />
+                  </div>
+                  <div>
+                    <label className="text-slate-300 block mb-1">Property Type</label>
+                    <input name="propType" required placeholder="e.g. Commercial & Residential Tower" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200" />
+                  </div>
+                  <div>
+                    <label className="text-slate-300 block mb-1">Location / Area</label>
+                    <input name="location" required placeholder="e.g. Seef, Manama" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-slate-300 block mb-1">Municipality No.</label>
+                      <input name="municipalityNo" required placeholder="MUN-2026-XXXX" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200 font-mono" />
+                    </div>
+                    <div>
+                      <label className="text-slate-300 block mb-1">Total Units</label>
+                      <input name="totalUnits" type="number" required defaultValue="12" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200" />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <button type="button" onClick={() => setIsAddPropertyModalOpen(false)} className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl">Cancel</button>
+                    <button type="submit" className="px-4 py-2 bg-amber-500 text-slate-950 font-bold rounded-xl">Add Property</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* MODAL: ADD NEW UNIT                                      */}
+          {/* ======================================================== */}
+          {isAddUnitModalOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <h3 className="font-bold text-white text-sm">Add Unit to Property</h3>
+                  <button onClick={() => setIsAddUnitModalOpen(false)} className="text-slate-400 hover:text-white">
+                    <Icon name="X" className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleAddUnit} className="space-y-3 text-xs">
+                  <div>
+                    <label className="text-slate-300 block mb-1">Select Property</label>
+                    <select name="propId" required className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200">
+                      {properties.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-slate-300 block mb-1">Unit Number / Code</label>
+                      <input name="unitNumber" required placeholder="e.g. APT 402" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200" />
+                    </div>
+                    <div>
+                      <label className="text-slate-300 block mb-1">Floor</label>
+                      <input name="floor" required placeholder="e.g. 4th Floor" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-slate-300 block mb-1">Monthly Rent (BHD)</label>
+                      <input name="rentAmount" type="number" step="10" required placeholder="650" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200 font-mono" />
+                    </div>
+                    <div>
+                      <label className="text-slate-300 block mb-1">Bedrooms</label>
+                      <input name="bedrooms" type="number" required defaultValue="2" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200" />
+                    </div>
+                    <div>
+                      <label className="text-slate-300 block mb-1">Bathrooms</label>
+                      <input name="bathrooms" type="number" required defaultValue="2" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-slate-300 block mb-1">Unit Type</label>
+                      <input name="unitType" required placeholder="Residential Apartment" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200" />
+                    </div>
+                    <div>
+                      <label className="text-slate-300 block mb-1">EWA Account No.</label>
+                      <input name="ewaAccountNo" required placeholder="EWA-9920102" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200 font-mono" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-slate-300 block mb-1">EWA Monthly Cap Limit (BHD)</label>
+                    <input name="ewaCap" type="number" required defaultValue="80" className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200 font-mono" />
+                  </div>
+
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <button type="button" onClick={() => setIsAddUnitModalOpen(false)} className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl">Cancel</button>
+                    <button type="submit" className="px-4 py-2 bg-amber-500 text-slate-950 font-bold rounded-xl">Save Unit</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* MODAL: BHD OFFICIAL PAYMENT RECEIPT PREVIEW                */}
+          {/* ======================================================== */}
+          {isPaymentReceiptModalOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white text-slate-900 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl font-sans">
+                <div className="flex items-center justify-between border-b pb-3">
+                  <div>
+                    <h3 className="font-bold text-base text-slate-900">Executive Facility Management</h3>
+                    <p className="text-xs text-slate-500">Official Rental Receipt (Bahrain)</p>
+                  </div>
+                  <button onClick={() => setIsPaymentReceiptModalOpen(null)} className="text-slate-400 hover:text-slate-700">
+                    <Icon name="X" className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Receipt No</span>
+                      <span className="font-mono font-bold text-slate-800">{isPaymentReceiptModalOpen.receiptNo}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-slate-500 block text-[10px]">Date</span>
+                      <span className="font-medium text-slate-800">{isPaymentReceiptModalOpen.date}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 py-2">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Period Covered:</span>
+                      <span className="font-semibold text-slate-800">{isPaymentReceiptModalOpen.period}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Payment Gateway:</span>
+                      <span className="font-semibold text-slate-800">{isPaymentReceiptModalOpen.method}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2 mt-2">
+                      <span className="text-slate-700 font-bold">Total Settled:</span>
+                      <span className="font-bold text-emerald-600 text-sm">{formatBHD(isPaymentReceiptModalOpen.amount)}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-800 flex items-center space-x-2">
+                    <Icon name="ShieldCheck" className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <span>Digitally verified payment record issued in compliance with Kingdom of Bahrain Tenancy regulations.</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-2 pt-2 border-t">
+                  <button
+                    onClick={() => {
+                      triggerToast(`Downloaded PDF receipt ${isPaymentReceiptModalOpen.receiptNo}`);
+                      setIsPaymentReceiptModalOpen(null);
+                    }}
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-2 shadow"
+                  >
+                    <Icon name="Download" className="w-4 h-4" />
+                    <span>Download Official Receipt PDF</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER */}
+          <footer className="bg-slate-950 border-t border-slate-800 py-4 px-4 text-center text-xs text-slate-500 mt-auto">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+              <span>&copy; 2026 Executive Facility Management — Kingdom of Bahrain</span>
+              <span className="font-mono text-[11px]">BHD Standard • CPR / CR / EWA Cap Automated Engine</span>
+            </div>
+          </footer>
+
+        </div>
+      );
+    }
+
+    // Render App
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
